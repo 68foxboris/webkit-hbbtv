@@ -40,7 +40,7 @@ def getPosition():
 			file = open("/proc/stb/fb/dst_height", "r")
 			dst_height = int(file.read().strip(), 16)
 			file.close()
-		except Exception, Err:
+		except Exception as Err:
 			ERR(Err)
 			return None
 	return (dst_left, dst_width, dst_top, dst_height)
@@ -48,7 +48,7 @@ def getPosition():
 def setPosition(params):
 	if params is None:
 		return
-	if params[0] + params[1] > 720 or params[2] + params[3] > 576 :
+	if params[0] + params[1] > 720 or params[2] + params[3] > 576:
 		return
 	else:
 		try:
@@ -64,7 +64,7 @@ def setPosition(params):
 			file = open("/proc/stb/fb/dst_height", "w")
 			file.write('%X' % params[3])
 			file.close()
-		except Exception, Err:
+		except Exception as Err:
 			ERR(Err)
 			return
 
@@ -75,14 +75,14 @@ def osd_lock():
 	if fileExists("/usr/bin/config"):
 		try:
 			os.system('config -c DirectFB -visible on; config -c 1 -visible off')
-		except Exception, Err:
+		except Exception as Err:
 			ERR(Err)
 
 def osd_unlock():
 	if fileExists("/usr/bin/config"):
 		try:
 			os.system('config -c 1 -visible on; config -c DirectFB -visible off')
-		except Exception, Err:
+		except Exception as Err:
 			ERR(Err)
 
 	fbClass.getInstance().unlock()
@@ -98,18 +98,22 @@ g_debug = False
 
 def LogEntry(mode, string):
 	if g_debug:
-		print strftime("%x %X", localtime()), "%5s [%12s]" % (mode, "Plugin"), string
+		print(strftime("%x %X", localtime()), "%5s [%12s]" % (mode, "Plugin"), string)
 	elif mode != "DEBUG":
-		print "[browser]", string
+		print("[browser] %s" % string)
 
 def DEBUG(string):
-	LogEntry("DEBUG", string)
+	if g_debug:
+		LogEntry("DEBUG", string)
 
 def LOG(string):
-	LogEntry("LOG", string)
+	if g_debug:
+		LogEntry("LOG", string)
 
 def WARN(string):
-	LogEntry("WARN", string)
+	if g_debug:
+		LogEntry("WARN", string)
 
 def ERR(string):
-	LogEntry("ERROR", string)
+	if g_debug:
+		LogEntry("ERROR", string)

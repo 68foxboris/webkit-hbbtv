@@ -2,10 +2,11 @@ from Screens.Screen import Screen
 
 from enigma import eTimer
 
-import os, struct, vbcfg
+import os, struct
 
-from __init__ import _
-from vbipc import VBController
+from . import vbcfg
+from .__init__ import _
+from .vbipc import VBController
 
 class HbbTVWindow(Screen):
 	skin = """

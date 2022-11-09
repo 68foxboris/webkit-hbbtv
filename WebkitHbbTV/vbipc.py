@@ -1,5 +1,5 @@
 import os, threading, time, socket, select, struct
-import vbcfg
+from . import vbcfg
 
 _OPCODE  = {}
 _BUFSIZE = 4096
@@ -22,7 +22,9 @@ def GetHandler(opcode):
 def GetOpcode(opcode):
 	try:
 		return _OPCODE[opcode][0]
-	except: return -1;
+	except:
+		return -1
+
 
 class VBController:
 	@staticmethod
@@ -43,7 +45,7 @@ class VBController:
 			if cmd_fd is None:
 				raise Exception("fail to open controller file.")
 			os.write(cmd_fd, send_data)
-		except Exception, err:
+		except Exception as err:
 			vbcfg.ERR("VBHController: %s" % err)
 			vbcfg.setPosition(vbcfg.g_position)
 			vbcfg.osd_unlock()
@@ -74,16 +76,17 @@ class VBServerThread(threading.Thread):
 			self.mSock.settimeout(self.mTimeout)
 			self.mSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			self.mSock.bind(addr)
-		except: return False
+		except:
+			return False
 		return True
 
 	def parse(self, data):
 		hlen = struct.calcsize('ibi')
 		packet = ""
 		opcode, result, length = struct.unpack('ibi', data[:hlen])
-		#vbcfg.DEBUG("%s %s %d" % (opcode, result, length))
+		vbcfg.DEBUG("%s %s %d" % (opcode, result, length))
 		if length > 0:
-			packet = data[hlen:hlen+length]
+			packet = data[hlen:hlen + length]
 		return [opcode, result, packet]
 
 	def assamble(self, opcode, result, packet):
@@ -96,10 +99,11 @@ class VBServerThread(threading.Thread):
 		read_data = conn.recv(_BUFSIZE)
 		request = self.parse(read_data)
 		opcode, result, read_packet = request[0], request[1], request[2]
-		result, send_packet = False,None
+		vbcfg.DEBUG("opcode %d" % opcode)
+		result, send_packet = False, None
 		try:
 			result, send_packet = GetHandler(opcode)(result, read_packet)
-		except Exception, ErrMsg:
+		except Exception as ErrMsg:
 			vbcfg.ERR(ErrMsg)
 		send_data = self.assamble(opcode, result, send_packet)
 		conn.sendall(send_data)
@@ -118,7 +122,7 @@ class VBServerThread(threading.Thread):
 					try:
 						conn, addr = self.mSock.accept()
 						self.process(conn, addr)
-					except Exception, err:
+					except Exception as err:
 						vbcfg.ERR("VBSServerThread: %s" % err)
 					finally:
 						if conn is not None:
@@ -154,5 +158,6 @@ class VBHandlers:
 				vbcfg.DEBUG("registrated at %s" % opcodestr)
 				SetHandler(opcodestr, fref)
 				registreted_idx += 1
-			except: pass
+			except:
+				pass
 		vbcfg.DEBUG("%d registreated" % registreted_idx)

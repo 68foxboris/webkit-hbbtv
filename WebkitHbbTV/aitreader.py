@@ -1,14 +1,14 @@
 import os, xml.dom.minidom, re
 from enigma import iServiceInformation
 
-import vbcfg
+from . import vbcfg
 
 RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
 				u'|' + \
 				u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \
-				(unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-				unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-				unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
+				(chr(0xd800),chr(0xdbff),chr(0xdc00),chr(0xdfff),
+				chr(0xd800),chr(0xdbff),chr(0xdc00),chr(0xdfff),
+				chr(0xd800),chr(0xdbff),chr(0xdc00),chr(0xdfff))
 
 DUMPBIN = vbcfg.PLUGINROOT + "/dumpait"
 class eAITSectionReader:
@@ -73,36 +73,37 @@ class eAITSectionReader:
 			return True
 
 		document = ""
-		try:	document = os.popen(self.mCommand).read()
-		except Exception, ErrMsg:
+		try:
+			document = os.popen(self.mCommand).read()
+		except Exception as ErrMsg:
 			vbcfg.ERR(ErrMsg)
 			return False
 		if len(document) == 0:
 			return False
 		document = re.sub(RE_XML_ILLEGAL, "?", document)
 		document = re.sub("&", "+", document)
-		document = document.decode("cp1252").encode("utf-8")
+		# document = document.encode("cp1252").decode("utf-8") # Py3 does not have str.decode()
 		document = "<URL>" + document + "</URL>"
 		try:
 			self.mDocument = xml.dom.minidom.parseString(document)
-		except Exception, ErrMsg:
+		except Exception as ErrMsg:
 			vbcfg.ERR("XML parse: %s" % ErrMsg)
 			return False
 		return True
 
 	def doDump(self):
 		for x in self.getApplicationList():
-			print "Name  :", x["name"]
-			print "URL   :", x["url"]
-			print "OrgID :", x["orgid"]
-			print "AppID :", x["appid"]
-			print "Control Code :", x["control"]
-			print "Profile Code :", x["profile"]
-			print ""
+			print("Name  :", x["name"])
+			print("URL   :", x["url"])
+			print("OrgID :", x["orgid"])
+			print("AppID :", x["appid"])
+			print("Control Code :", x["control"])
+			print("Profile Code :", x["profile"])
+			print("")
 
 def unit_test(demux, pmtid, sid):
 	reader = eAITSectionReader(demux, pmtid, sid)
-	if reader.doOpen():
+	if reader.doOpen(None, None):
 		reader.doParseApplications()
 		reader.doDump()
 	else:

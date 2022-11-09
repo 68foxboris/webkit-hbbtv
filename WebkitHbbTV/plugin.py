@@ -13,48 +13,50 @@ from Components.VolumeControl import VolumeControl
 
 from enigma import eTimer, iServiceInformation, iPlayableService
 
-import os, struct, vbcfg, time
+import os, struct, time
 
-from __init__ import _
-from hbbtv import HbbTVWindow
-from vbipc import VBController, VBServerThread, VBHandlers
+from . import vbcfg
+from .__init__ import _
+from .hbbtv import HbbTVWindow
+from .vbipc import VBController, VBServerThread, VBHandlers
 
 strIsEmpty = lambda x: x is None or len(x) == 0
 
 vbcfg.SOCKETFILE = '/tmp/.browser.support'
 vbcfg.CONTROLFILE = '/tmp/.browser.controller'
 _OPCODE_LIST = [
-		'CONTROL_BACK',
-		'CONTROL_FORWARD',
-		'CONTROL_STOP',
-		'CONTROL_RELOAD',
-		'CONTROL_OPENURL',
-		'CONTROL_EXIT',
-		'CONTROL_TITLE',
-		'CONTROL_OK',
-		'CONTROL_OUT_OF_MEMORY',
-		'CONTROL_INVALIDATE',
-		'CONTROL_GET_FBSIZE',
-		'CONTROL_GET_VOLUME',
-		'CONTROL_SET_VOLUME',
-		'CONTROL_VOLUME_UP',
-		'CONTROL_VOLUME_DOWN',
-		'HBBTV_LOADAIT',
-		'HBBTV_OPENURL',
-		'YOUTUBETV_OPENURL',
-		'BROWSER_OPENURL',
-		'BROWSER_MENU_OPEN',
-		'BROWSER_MENU_CLOSE',
-		'BROWSER_VKB_OPEN',
-		'BROWSER_VKB_CLOSE',
-		'OOIF_GET_CURRENT_CHANNEL',
-		'OOIF_BROADCAST_PLAY',
-		'OOIF_BROADCAST_STOP',
-		'OOIF_BROADCAST_CHECK',
-		'CONTROL_RELOAD_KEYMAP',
-		'GET_TIME_OFFSET',
-		'OPCODE_END'
-		]
+	'CONTROL_BACK',
+	'CONTROL_FORWARD',
+	'CONTROL_STOP',
+	'CONTROL_RELOAD',
+	'CONTROL_OPENURL',
+	'CONTROL_EXIT',
+	'CONTROL_TITLE',
+	'CONTROL_OK',
+	'CONTROL_OUT_OF_MEMORY',
+	'CONTROL_INVALIDATE',
+	'CONTROL_GET_FBSIZE',
+	'CONTROL_GET_VOLUME',
+	'CONTROL_SET_VOLUME',
+	'CONTROL_VOLUME_UP',
+	'CONTROL_VOLUME_DOWN',
+	'HBBTV_LOADAIT',
+	'HBBTV_OPENURL',
+	'YOUTUBETV_OPENURL',
+	'BROWSER_OPENURL',
+	'BROWSER_MENU_OPEN',
+	'BROWSER_MENU_CLOSE',
+	'BROWSER_VKB_OPEN',
+	'BROWSER_VKB_CLOSE',
+	'OOIF_GET_CURRENT_CHANNEL',
+	'OOIF_BROADCAST_PLAY',
+	'OOIF_BROADCAST_STOP',
+	'OOIF_BROADCAST_CHECK',
+	'CONTROL_RELOAD_KEYMAP',
+	'GET_TIME_OFFSET',
+	'OPCODE_END'
+]
+
 
 class VBHandler(VBHandlers):
 	def __init__(self, session):
@@ -104,7 +106,7 @@ class VBHandler(VBHandlers):
 		return (True, None)
 
 	def _CB_CONTROL_TITLE(self, result, packet):
-		if packet.startswith('file://') or packet.startswith('http://'):
+		if packet.startswith(b'file://') or packet.startswith(b'http://'):
 			return (True, None)
 		for x in self.onSetTitleCB:
 			try:
@@ -116,12 +118,12 @@ class VBHandler(VBHandlers):
 		return (True, None)
 
 	def _CB_CONTROL_OK(self, result, packet):
-		if vbcfg.g_browser and packet.startswith('stop'):
+		if vbcfg.g_browser and packet.startswith(b'stop'):
 			vbcfg.g_browser.keyOK()
 		return (True, None)
 
 	def _CB_CONTROL_OUT_OF_MEMORY(self, result, packet):
-		vbcfg.need_restart = True;
+		vbcfg.need_restart = True
 		return (True, None)
 
 	def _CB_CONTROL_INVALIDATE(self, result, packet):
@@ -170,8 +172,8 @@ class VBHandler(VBHandlers):
 		orgid = appinfo and appinfo["orgid"]
 		if (vbcfg.g_channel_info):
 			try:
-				data = struct.pack('iiiii', int(orgid), vbcfg.g_channel_info[0], vbcfg.g_channel_info[1], vbcfg.g_channel_info[2], len(vbcfg.g_channel_info[3])) + vbcfg.g_channel_info[3]
-			except Exception, err:
+				data = struct.pack('iiiii', int(orgid), vbcfg.g_channel_info[0], vbcfg.g_channel_info[1], vbcfg.g_channel_info[2], len(vbcfg.g_channel_info[3])) + bytes(vbcfg.g_channel_info[3], 'utf-8')
+			except Exception as err:
 				vbcfg.ERR(err)
 				return (False, None)
 		else:
@@ -202,7 +204,7 @@ class VBHandler(VBHandlers):
 
 		try:
  			data = struct.pack('i', int(offset))
-		except Exception, err:
+		except Exception as err:
 			vbcfg.ERR(err)
 			return (False, None)
 
@@ -280,7 +282,7 @@ class VBMain(Screen):
 		try:
 			if selected[1] is not None:
 				self._cb_hbbtv_activated(selected[1]["url"], selected[1])
-		except Exception, ErrMsg:
+		except Exception as ErrMsg:
 			vbcfg.ERR(ErrMsg)
 
 	def get_autostart_application(self):
@@ -300,11 +302,11 @@ class VBMain(Screen):
 				demux = demux if demux > '/' else '0'
 				vbcfg.DEBUG("demux = %s, pmtid = 0x%x, sid = 0x%x" % (demux, pmtid, sid))
 
-				from aitreader import eAITSectionReader
+				from .aitreader import eAITSectionReader
 				reader = eAITSectionReader(demux, pmtid, sid)
 				if reader.doOpen(info, self.m_vuplus):
 					reader.doParseApplications()
-					reader.doDump()
+					#reader.doDump()
 				else:
 					vbcfg.ERR("no AIT")
 
@@ -345,7 +347,9 @@ def auto_start_main(reason, **kwargs):
 		try:
 			if vbcfg.g_main.vbserver is not None:
 				vbcfg.g_main.vbserver.kill()
-		except: pass
+		except:
+			pass
+
 
 def session_start_main(session, reason, **kwargs):
 	vbcfg.g_main = session.open(VBMain)
